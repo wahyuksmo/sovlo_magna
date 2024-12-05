@@ -20,7 +20,7 @@ class UploadGudangController extends Controller
 
 
         if ($request->ajax()) {
-            $data = DB::select("SELECT * FROM stock_gudang");
+            $data = DB::select("SELECT * FROM stock_gudang LIMIT 5000");
             return DataTables::of($data)
                 ->make(true);
         }
