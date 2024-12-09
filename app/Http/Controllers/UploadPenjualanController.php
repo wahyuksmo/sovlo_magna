@@ -21,7 +21,7 @@ class UploadPenjualanController extends Controller
 
 
         if ($request->ajax()) {
-            $data = DB::select("SELECT * FROM penjualan");
+            $data = DB::select("SELECT * FROM penjualan LIMIT 1000");
             return DataTables::of($data)
                 ->make(true);
         }
