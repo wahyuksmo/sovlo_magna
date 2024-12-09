@@ -18,16 +18,33 @@ class UploadPenjualanController extends Controller
 {
     //
     public function index(Request $request) {
-
-
         if ($request->ajax()) {
-            $data = DB::select("SELECT * FROM penjualan LIMIT 1000");
+            $search = $request->input('search.value'); // DataTables search value
+            $query = "SELECT * FROM penjualan";
+            
+            // Jika ada pencarian
+            if (!empty($search)) {
+                $query .= " WHERE no_invoice LIKE :search 
+                            OR kode_customer LIKE :search 
+                            OR nama_customer LIKE :search 
+                            OR tgl_invoice LIKE :search 
+                            OR kode_item LIKE :search 
+                            OR nama_item LIKE :search 
+                            OR warehouse LIKE :search";
+            }
+    
+            // Tetap batasi hasil hingga 1000 data
+            $query .= " LIMIT 5000";
+    
+            $data = DB::select($query, ['search' => '%' . $search . '%']);
+    
             return DataTables::of($data)
                 ->make(true);
         }
-
+    
         return view('uploadpenjualan.index');
     }
+    
 
 
     public function validationUpload(Request $request) {

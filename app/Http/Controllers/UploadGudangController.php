@@ -17,16 +17,28 @@ class UploadGudangController extends Controller
 {
     //
     public function index(Request $request) {
-
-
+        
         if ($request->ajax()) {
-            $data = DB::select("SELECT * FROM stock_gudang LIMIT 1000");
+            $search = $request->input('search.value'); // DataTables search value
+            $query = "SELECT * FROM stock_gudang";
+    
+            if (!empty($search)) {
+                // Filter berdasarkan search input
+                $query .= " WHERE kode_gudang LIKE :search OR nama_gudang LIKE :search";
+            }
+    
+            // Tetap limit hasil query hingga 1000
+            $query .= " LIMIT 5000";
+    
+            $data = DB::select($query, ['search' => '%' . $search . '%']);
+    
             return DataTables::of($data)
                 ->make(true);
         }
-
+    
         return view('uploadgudang.index');
     }
+    
 
 
     // public function validationUpload(Request $request) {
