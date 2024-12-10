@@ -122,7 +122,7 @@ class UploadGudangController extends Controller
 
     // }
 
-    public function validationUpload(Request $request) {
+    public function validationUploadOld(Request $request) {
 
         $request->validate([
             'file' => 'mimes:xlsx,xls,csv',
@@ -183,6 +183,60 @@ class UploadGudangController extends Controller
             'data' => count($dataToInsert),
             'message' => 'File processed successfully. ' . count($dataToInsert) . ' rows inserted.'
         ]);
+
+    }
+
+
+    public function validationUpload(Request $request) {
+        $request->validate([
+            'file' => 'required|mimes:xlsx,xls,csv|max:2048',
+        ]);
+
+        $file = $request->file('file');
+
+
+        $spreadsheet = IOFactory::load($file->getRealPath());
+        $sheetData = $spreadsheet->getActiveSheet()->toArray(null, true, true, true);
+
+        $mapping = [
+            'A' => 'kode_gudang',
+            'B' => 'nama_gudang',
+            'C' => 'kode_item',
+            'D' => 'quantity',
+            'E' => 'standard_stock',
+            'F' => 'death_stock',
+        ];
+
+
+        $data = array_map(function ($row) use ($mapping) {
+            return array_combine(
+                array_values($mapping),
+                array_intersect_key($row, array_flip(array_keys($mapping)))
+            );
+        }, array_slice($sheetData, 1));
+
+
+        DB::beginTransaction();
+
+        try {
+
+            DB::table('stock_gudang')->insert($data);
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'data' => count($data),
+                'message' => 'File processed successfully. ' . count($data) . ' rows inserted.'
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred: ' . $e->getMessage()
+            ], 500);
+        }
 
     }
 

@@ -47,7 +47,7 @@ class UploadPenjualanController extends Controller
     
 
 
-    public function validationUpload(Request $request) {
+    public function validationUploadOld(Request $request) {
 
         $request->validate([
             'file' => 'mimes:xlsx,xls,csv',
@@ -238,6 +238,66 @@ class UploadPenjualanController extends Controller
         
 
     }
+
+
+    public function validationUpload(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|mimes:xlsx,xls,csv|max:2048',
+        ]);
+
+        $file = $request->file('file');
+
+        $spreadsheet = IOFactory::load($file->getRealPath());
+        $sheetData = $spreadsheet->getActiveSheet()->toArray(null, true, true, true);
+
+        $mapping = [
+            'A' => 'no_invoice',
+            'B' => 'kode_customer',
+            'C' => 'nama_customer',
+            'D' => 'tgl_invoice',
+            'E' => 'kode_item',
+            'F' => 'nama_item',
+            'G' => 'warehouse',
+            'H' => 'qty',
+            'I' => 'price',
+            'J' => 'total'
+        ];
+
+        $data = array_map(function ($row) use ($mapping) {
+
+            $row['I'] = number_format((float)str_replace(',', '.', $row['I']), 2, '.', '');
+            $row['J'] = number_format((float)str_replace(',', '.', $row['J']), 2, '.', '');
+            return array_combine(
+                array_values($mapping),
+                array_intersect_key($row, array_flip(array_keys($mapping)))
+            );
+        }, array_slice($sheetData, 1));
+
+
+        DB::beginTransaction();
+
+        try {
+
+            DB::table('penjualan')->insert($data);
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'data' => count($data),
+                'message' => 'File processed successfully. ' . count($data) . ' rows inserted.'
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
 
 
     public function uploadAction(Request $request)
