@@ -178,12 +178,19 @@ class UploadReplenishController extends Controller
             );
         }, array_slice($sheetData, 1));
 
+        $batchSize = 1000; // Set batch size
+        $chunks = array_chunk($data, $batchSize); // Split data into chunks of 1000
+
+
 
         DB::beginTransaction();
 
         try {
 
-            DB::table('stock_replenish')->insert($data);
+
+            foreach($chunks as $chunk) {
+                DB::table('stock_replenish')->insert($chunk);
+            }
 
             DB::commit();
 

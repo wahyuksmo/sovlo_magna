@@ -208,7 +208,18 @@
                     },
                     error: function(xhr) {
                         $('#loading').hide();
-                        console.error(xhr.responseJSON.message || "An error occurred.");
+                        if (xhr.status === 422) {
+                            let errors = xhr.responseJSON.errors;
+                            let errorMessage = '';
+                            
+                            $.each(errors, function(key, value) {
+                                errorMessage += value.join(', ') + '\n';
+                            });
+
+                            Swal.fire('Validation Error', errorMessage, 'error');
+                        } else {
+                            Swal.fire('Error', xhr.responseJSON.message, 'error');
+                        }
                     }
                 });
         });

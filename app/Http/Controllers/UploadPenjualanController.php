@@ -243,7 +243,7 @@ class UploadPenjualanController extends Controller
     public function validationUpload(Request $request)
     {
         $request->validate([
-            'file' => 'required|mimes:xlsx,xls,csv|max:2048',
+            'file' => 'required|mimes:xlsx,xls,csv',
         ]);
 
         $file = $request->file('file');
@@ -275,11 +275,18 @@ class UploadPenjualanController extends Controller
         }, array_slice($sheetData, 1));
 
 
+
+
+            $batchSize = 1000; // Set batch size
+            $chunks = array_chunk($data, $batchSize); // Split data into chunks of 1000
+
         DB::beginTransaction();
 
         try {
 
-            DB::table('penjualan')->insert($data);
+            foreach ($chunks as $chunk) {
+                DB::table('penjualan')->insert($chunk);
+            }
 
             DB::commit();
 

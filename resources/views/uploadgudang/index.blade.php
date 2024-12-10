@@ -194,7 +194,22 @@
                     },
                     error: function(xhr) {
                         $('#loading').hide();
-                        console.error(xhr.responseJSON.message || "An error occurred.");
+                        if (xhr.status === 422) {
+                            // If Laravel returns a 422 error, handle the validation errors
+                            let errors = xhr.responseJSON.errors;
+                            let errorMessage = '';
+                            
+                            // Loop through the errors and append them to the errorMessage string
+                            $.each(errors, function(key, value) {
+                                errorMessage += value.join(', ') + '\n';
+                            });
+
+                            // Show the errors in a Swal alert
+                            Swal.fire('Validation Error', errorMessage, 'error');
+                        } else {
+                            // Handle other errors
+                            Swal.fire('Validation Error', xhr.responseJSON.message, 'error');
+                        }
                     }
                 });
         });
