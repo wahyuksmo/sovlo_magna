@@ -25,7 +25,7 @@ class UploadGudangController extends Controller
             // Cek apakah ada pencarian
             if (!empty($search)) {
                 $query .= " WHERE kode_gudang ILIKE :search 
-                            OR nama_gudang ILIKE :search";
+                            OR nama_gudang ILIKE :search OR kode_item ILIKE:search";
                 $bindings['search'] = '%' . $search . '%';
             }
     
