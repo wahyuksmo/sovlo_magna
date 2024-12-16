@@ -202,9 +202,9 @@ class UploadGudangController extends Controller
             'A' => 'kode_gudang',
             'B' => 'nama_gudang',
             'C' => 'kode_item',
-            'D' => 'quantity',
-            'E' => 'standard_stock',
-            'F' => 'death_stock',
+            'E' => 'quantity',
+            'F' => 'standard_stock',
+            'G' => 'death_stock',
         ];
 
 
@@ -219,6 +219,7 @@ class UploadGudangController extends Controller
         $batchSize = 1000; // Set batch size
         $chunks = array_chunk($data, $batchSize); // Split data into chunks of 1000
 
+        // dd($chunks);
         DB::beginTransaction();
 
         try {
