@@ -21,7 +21,7 @@ class UploadReplenishController extends Controller
 
 
         if ($request->ajax()) {
-            $data = DB::select("SELECT * FROM stock_replenish");
+            $data = DB::select("SELECT * FROM stock_replenish ORDER BY skala_prioritas");
             return DataTables::of($data)
                 ->make(true);
         }
