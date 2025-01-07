@@ -70,6 +70,7 @@ class UploadPenjualanController extends Controller
             'tgl_invoice'    => 'required',
             'kode_item'      => 'required',
             'nama_item'      => 'required',
+            'warehouse_code' => 'required',
             'warehouse'      => 'required',
             'qty'            => 'required|int',
             'price'          => 'required',
@@ -83,6 +84,7 @@ class UploadPenjualanController extends Controller
             'Tanggal Invoice'   => 'tgl_invoice',
             'Kode Item'         => 'kode_item',
             'Nama Item'         => 'nama_item',
+            'Kode Warehouse'    => 'warehouse_code',
             'Warehouse'         => 'warehouse',
             'QTY'               => 'qty',
             'Price'             => 'price',
@@ -113,6 +115,7 @@ class UploadPenjualanController extends Controller
             $column8 = $sheet->getCell('H' . $rowIndex)->getValue(); // Kolom C
             $column9 = $sheet->getCell('I' . $rowIndex)->getValue(); // Kolom C
             $column10 = $sheet->getCell('J' . $rowIndex)->getValue(); // Kolom C
+            $column11 = $sheet->getCell('K' . $rowIndex)->getValue(); // Kolom C
 
             if(empty($column1) || empty($column2) || empty($column3) || empty($column4) || empty($column5) || empty($column6) || empty($column7) || empty($column8) || empty($column9) || empty($column10)) {
                 continue;
@@ -259,32 +262,42 @@ class UploadPenjualanController extends Controller
             'E' => 'kode_item',
             'F' => 'nama_item',
             'G' => 'warehouse',
-            'H' => 'qty',
-            'I' => 'price',
-            'J' => 'total'
+            'I' => 'qty',
+            'J' => 'price',
+            'K' => 'total'
         ];
 
         $data = array_map(function ($row) use ($mapping) {
-
-            $row['I'] = number_format((float)str_replace(',', '.', $row['I']), 2, '.', '');
-            $row['J'] = number_format((float)str_replace(',', '.', $row['J']), 2, '.', '');
+            $row['J'] = number_format((float)str_replace(',', '.', $row['I']), 2, '.', '');
+            $row['K'] = number_format((float)str_replace(',', '.', $row['J']), 2, '.', '');
             return array_combine(
                 array_values($mapping),
                 array_intersect_key($row, array_flip(array_keys($mapping)))
             );
         }, array_slice($sheetData, 1));
 
+        // Ambil semua nilai unik dari kolom warehouse
+        $warehouseList = array_unique(array_column($data, 'warehouse'));
 
+        // Ambil daftar kode_gudang yang valid dari tabel stock_gudang
+        $validWarehouses = DB::table('stock_gudang')
+            ->whereIn('kode_gudang', $warehouseList)  // Sesuaikan dengan kolom kode_gudang
+            ->pluck('kode_gudang')
+            ->toArray();
 
+        // Filter data yang memiliki warehouse valid
+        $validData = array_filter($data, function ($row) use ($validWarehouses) {
+            return in_array($row['warehouse'], $validWarehouses);
+        });
 
-            $batchSize = 1000; // Set batch size
-            $chunks = array_chunk($data, $batchSize); // Split data into chunks of 1000
+        $batchSize = 1000; // Set batch size
+        $chunks = array_chunk($validData, $batchSize); // Split data into chunks of 1000
 
         DB::beginTransaction();
 
         try {
-
             foreach ($chunks as $chunk) {
+                // Insert data valid saja
                 DB::table('penjualan')->insert($chunk);
             }
 
@@ -292,8 +305,8 @@ class UploadPenjualanController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => count($data),
-                'message' => 'File processed successfully. ' . count($data) . ' rows inserted.'
+                'data' => count($validData),
+                'message' => 'File processed successfully. ' . count($validData) . ' rows inserted.'
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
@@ -304,6 +317,7 @@ class UploadPenjualanController extends Controller
             ], 500);
         }
     }
+
 
 
 
