@@ -18,9 +18,9 @@ class UploadPenjualanRepository
     public static function upload($request) {
 
         $savedPenjualans = [];
-    
+        
         DB::beginTransaction();
-    
+        
         try {
             foreach ($request as $data) {
                 if ($data['status_validation'] === 'Success') {
@@ -33,16 +33,43 @@ class UploadPenjualanRepository
     
                     if ($existingPenjualan) {
                         // Jika data ditemukan, perbarui data yang ada
-                        $existingPenjualan->nama_customer = $data['nama_customer'];
-                        $existingPenjualan->tgl_invoice = $data['tgl_invoice'];
-                        $existingPenjualan->nama_item = $data['nama_item'];
-                        $existingPenjualan->warehouse = $data['warehouse_code'];
-                        $existingPenjualan->qty = $data['qty'];
-                        $existingPenjualan->price = $data['price'];
-                        $existingPenjualan->total = $data['total'];
+                        $updateData = [];
     
-                        $existingPenjualan->save();
+                        // Periksa dan perbarui hanya jika ada perubahan
+                        if ($existingPenjualan->nama_customer != $data['nama_customer']) {
+                            $updateData['nama_customer'] = $data['nama_customer'];
+                        }
+                        if ($existingPenjualan->tgl_invoice != $data['tgl_invoice']) {
+                            $updateData['tgl_invoice'] = $data['tgl_invoice'];
+                        }
+                        if ($existingPenjualan->nama_item != $data['nama_item']) {
+                            $updateData['nama_item'] = $data['nama_item'];
+                        }
+                        if ($existingPenjualan->warehouse != $data['warehouse_code']) {
+                            $updateData['warehouse'] = $data['warehouse_code'];
+                        }
+                        if ($existingPenjualan->qty != $data['qty']) {
+                            $updateData['qty'] = $data['qty'];
+                        }
+                        if ($existingPenjualan->price != $data['price']) {
+                            $updateData['price'] = $data['price'];
+                        }
+                        if ($existingPenjualan->total != $data['total']) {
+                            $updateData['total'] = $data['total'];
+                        }
+    
+                        // Jika ada data yang perlu diperbarui
+                        if (!empty($updateData)) {
+                            Penjualan::where('no_invoice', $data['no_invoice'])
+                                ->where('kode_customer', $data['kode_customer'])
+                                ->where('kode_item', $data['kode_item'])
+                                ->where('warehouse', $data['warehouse_code'])
+                                ->update($updateData);
+                        }
+    
+                        // Menyimpan data yang diupdate ke array
                         $savedPenjualans[] = $existingPenjualan;
+    
                     } else {
                         // Jika data tidak ditemukan, buat data baru dengan ID manual
                         $lastId = Penjualan::orderBy('id', 'desc')->value('id');
@@ -60,13 +87,13 @@ class UploadPenjualanRepository
                         $penjualan->qty = $data['qty'];
                         $penjualan->price = $data['price'];
                         $penjualan->total = $data['total'];
-    
+        
                         $penjualan->save();
                         $savedPenjualans[] = $penjualan;
                     }
                 }
             }
-    
+        
             DB::commit();
             return $savedPenjualans;
         } catch (ValidationException $e) {
@@ -77,6 +104,7 @@ class UploadPenjualanRepository
             throw $e;
         }
     }
+    
     
 
 }

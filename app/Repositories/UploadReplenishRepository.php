@@ -17,9 +17,9 @@ class UploadReplenishRepository
     public static function upload($request) {
 
         $savedPenishs = [];
-    
+        
         DB::beginTransaction();
-    
+        
         try {
             foreach ($request as $data) {
                 if ($data['status_validation'] === 'Success') {
@@ -27,21 +27,25 @@ class UploadReplenishRepository
                     $penish = StockReplenish::where('kode_item', $data['kode_item'])->first();
     
                     if ($penish) {
-                        // Jika data ditemukan, update quantity
-                        $penish->quantity = $data['quantity'];
-                        $penish->save();
+                        // Jika data ditemukan, perbarui quantity hanya jika ada perubahan
+                        if ($penish->quantity != $data['quantity']) {
+                            // Gunakan update() untuk memperbarui tanpa menggunakan save()
+                            StockReplenish::where('kode_item', $data['kode_item'])
+                                ->update(['quantity' => $data['quantity']]);
+                        }
                     } else {
-                        // Jika data tidak ditemukan, buat data baru
-                        $penish = new StockReplenish();
-                        $penish->kode_item = $data['kode_item'];
-                        $penish->quantity = $data['quantity'];
-                        $penish->save();
+                        // Jika data tidak ditemukan, buat data baru tanpa save()
+                        StockReplenish::create([
+                            'kode_item' => $data['kode_item'],
+                            'quantity' => $data['quantity']
+                        ]);
                     }
     
-                    $savedPenishs[] = $penish;
+                    // Ambil data yang telah disimpan
+                    $savedPenishs[] = $penish ?: StockReplenish::where('kode_item', $data['kode_item'])->first();
                 }
             }
-    
+        
             DB::commit();
             return $savedPenishs;
         } catch (ValidationException $e) {
@@ -52,6 +56,7 @@ class UploadReplenishRepository
             throw $e;
         }
     }
+    
     
 
 }
