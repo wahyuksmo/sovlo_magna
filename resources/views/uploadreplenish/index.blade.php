@@ -85,9 +85,9 @@
 
         </div>
         
-        {{-- <div class="modal-footer">
+        <div class="modal-footer">
             <button id="uploadJsonExcel" class="btn btn-primary">Submit</button>
-        </div> --}}
+        </div>
 
       </div>
     </div>
