@@ -17,36 +17,33 @@ class UploadReplenishRepository
     public static function upload($request) {
 
         $savedPenishs = [];
-
+    
         DB::beginTransaction();
-
+    
         try {
-
-            foreach($request as $data) {
-                
+            foreach ($request as $data) {
                 if ($data['status_validation'] === 'Success') {
-
-                    $penish = new StockReplenish();
-                    $penish->kode_item = $data['kode_item'];
-                    $penish->quantity = $data['quantity'];
-                    $penish->save();
-
+                    // Menggunakan updateOrCreate berdasarkan kode_item
+                    $penish = StockReplenish::updateOrCreate(
+                        ['kode_item' => $data['kode_item']], // Kondisi pencocokan
+                        ['quantity' => $data['quantity']]   // Data yang akan diupdate atau dibuat
+                    );
+    
                     $savedPenishs[] = $penish;
                 }
-
             }
-
+    
             DB::commit();
             return $savedPenishs;
-        }catch(ValidationException $e) {
+        } catch (ValidationException $e) {
             DB::rollback();
             throw $e;
-        } catch(Exception $e) {
+        } catch (Exception $e) {
             DB::rollback();
             throw $e;
         }
-
     }
+    
 
 }
 

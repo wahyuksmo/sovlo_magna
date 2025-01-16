@@ -21,7 +21,7 @@ class UploadReplenishController extends Controller
 
 
         if ($request->ajax()) {
-            $data = DB::select("SELECT * FROM stock_replenish ORDER BY skala_prioritas");
+            $data = DB::select("SELECT * FROM stock_replenish");
             return DataTables::of($data)
                 ->make(true);
         }
@@ -30,76 +30,7 @@ class UploadReplenishController extends Controller
     }
 
 
-    // public function validationUpload(Request $request) {
-
-    //     $request->validate([
-    //         'file' => 'mimes:xlsx,xls,csv',
-    //     ]);
-
-
-    //     $uploadedFile = $request->file('file');
-    //     $spreadsheet = IOFactory::load($uploadedFile);
-    //     $worksheet = $spreadsheet->getActiveSheet();
-
-
-    //     $data = [];
-
-    //     $rules = [
-    //         'kode_item'     => 'required',
-    //         'quantity'      => 'int'
-    //     ];
-
-    //     $headerMapping = [
-    //         'Kode Item'     => 'kode_item',
-    //         'Quantity'      => 'quantity'
-    //     ];
-
-    //     $rows = $worksheet->toArray();
-
-    //     if (!empty($rows)) {
-    //         $headerRow = array_shift($rows);
-    
-    //         foreach ($headerRow as $header) {
-    //             if (array_key_exists($header, $headerMapping)) {
-    //                 $key = $headerMapping[$header]; 
-    //                 $keys[] = $key;
-    //             }
-    //         }
-    //     }
-
-
-    //     foreach ($rows as $index => $row) {
-    //         $rowData = array_combine($keys, $row);
-    
-    //         $isValid = true;
-    //         $validationMessage = '';
-    
-    //         foreach ($rules as $column => $rule) {
-    //             $cellValue = $rowData[$column] ?? null;
-    //             $validator = Validator::make([$column => $cellValue], [$column => $rule]);
-    
-    //             if ($validator->fails()) {
-    //                 $isValid = false;
-    //                 $validationMessage = $validator->errors()->first();
-    //             }
-    //         }
-    //         $rowData['status_validation'] = $isValid ? 'Success' : 'Error';
-    //         $rowData['message_validation'] = $isValid ? 'Row Data Is Valid' : $validationMessage;
-    
-    
-    //         $data[] = $rowData;
-    //     }
-
-        
-    //     return response()->json([
-    //         'success' => true,
-    //         'data' => $data,
-    //         'message' => 'File processed successfully.'
-    //     ]);
-
-    // }
-
-    public function validationUploadOld(Request $request) {
+    public function validationUpload(Request $request) {
 
         $request->validate([
             'file' => 'mimes:xlsx,xls,csv',
@@ -108,53 +39,73 @@ class UploadReplenishController extends Controller
 
         $uploadedFile = $request->file('file');
         $spreadsheet = IOFactory::load($uploadedFile);
-        $sheet = $spreadsheet->getActiveSheet();
+        $worksheet = $spreadsheet->getActiveSheet();
 
-        $dataToInsert = [];
-        foreach ($sheet->getRowIterator() as $rowIndex => $row) {
-            // Lewati header jika ada (misalnya baris pertama)
-            if ($rowIndex === 1) {
-                continue;
+
+        $data = [];
+
+        $rules = [
+            'kode_item'     => 'required',
+            'quantity'      => 'int'
+        ];
+
+        $headerMapping = [
+            'Kode Item'     => 'kode_item',
+            'Quantity'      => 'quantity'
+        ];
+
+        $rows = $worksheet->toArray();
+
+        if (!empty($rows)) {
+            $headerRow = array_shift($rows);
+    
+            foreach ($headerRow as $header) {
+                if (array_key_exists($header, $headerMapping)) {
+                    $key = $headerMapping[$header]; 
+                    $keys[] = $key;
+                }
             }
-
-            // Ambil data dari kolom tertentu (A, B, C, ...)
-            $column1 = $sheet->getCell('A' . $rowIndex)->getValue(); // Kolom A
-            $column2 = $sheet->getCell('B' . $rowIndex)->getValue(); // Kolom B
-
-
-            if(empty($column1)) {
-                continue;
-            }
-
-
-            // Menambahkan data ke dalam array
-            $dataToInsert[] = [
-                'kode_item' => $column1,
-                'quantity' => $column2,
-            ];
-            
-
-            // if (count($dataToInsert) >= 50) {
-            //     DB::table('penjualan_temp')->insert($dataToInsert);
-            //     $dataToInsert = []; // Reset array data setelah insert
-            // }
         }
 
-        if (!empty($dataToInsert)) {
-            DB::table('stock_replenish')->insert($dataToInsert);
+
+        foreach ($rows as $index => $row) {
+            $rowData = array_combine($keys, $row);
+    
+            if (empty(array_filter($row))) {
+                continue;
+            }
+
+            $isValid = true;
+            $validationMessage = '';
+    
+            foreach ($rules as $column => $rule) {
+                $cellValue = $rowData[$column] ?? null;
+                $validator = Validator::make([$column => $cellValue], [$column => $rule]);
+    
+                if ($validator->fails()) {
+                    $isValid = false;
+                    $validationMessage = $validator->errors()->first();
+                }
+            }
+            $rowData['status_validation'] = $isValid ? 'Success' : 'Error';
+            $rowData['message_validation'] = $isValid ? 'Row Data Is Valid' : $validationMessage;
+    
+    
+            $data[] = $rowData;
         }
 
         
         return response()->json([
             'success' => true,
-            'data' => count($dataToInsert),
-            'message' => 'File processed successfully. ' . count($dataToInsert) . ' rows inserted.'
+            'data' => $data,
+            'message' => 'File processed successfully.'
         ]);
 
     }
 
 
-    public function validationUpload(Request $request) {
+
+    public function validationUploadOld(Request $request) {
         $request->validate([
             'file' => 'required|mimes:xlsx,xls,csv|max:2048',
         ]);

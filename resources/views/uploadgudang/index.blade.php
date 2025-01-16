@@ -70,29 +70,31 @@
             </div>
 
             <div id="response-table-container" class="mt-4" style="display: none;">
-                <table class="table table-bordered" id="response-table">
-                    <thead>
-                        <tr>
-                            <th>Kode Gudang</th>
-                            <th>Nama Gudang</th>
-                            <th>Kode Item</th>
-                            <th>Quantity</th>
-                            <th>Standard Stock</th>
-                            <th>Deatch Stock</th>
-                            <th>Status Validasi</th>
-                            <th>Pesan Validasi</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                    </tbody>
-                </table>
+                <div class="table-responsive">
+                    <table class="table table-bordered" id="response-table">
+                        <thead>
+                            <tr>
+                                <th>Kode Gudang</th>
+                                <th>Nama Gudang</th>
+                                <th>Kode Item</th>
+                                <th>Quantity</th>
+                                <th>Standard Stock</th>
+                                <th>Deatch Stock</th>
+                                <th>Status Validasi</th>
+                                <th>Pesan Validasi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
         </div>
         
-        {{-- <div class="modal-footer">
+        <div class="modal-footer">
             <button id="uploadJsonExcel" class="btn btn-primary">Submit</button>
-        </div> --}}
+        </div>
 
       </div>
     </div>
@@ -127,50 +129,7 @@
             ]
         });
 
-
-        // $('#upload-form').on('submit', function(e) {
-        //         e.preventDefault();
-
-        //         let formData = new FormData(this);
-        //         $('#loading').show();
-        //         $('#response-table-container').hide();
-
-        //         $.ajax({
-        //             url: '/uploadgudang/validateUpload',
-        //             type: 'POST',
-        //             data: formData,
-        //             contentType: false,
-        //             processData: false,
-        //             success: function(response) {
-        //                 $('#loading').hide();
-        //                 $('#response-table tbody').empty();
-
-        //                 if (response.success && response.data.length > 0) {
-        //                     $('#response-table-container').show();
-        //                     response.data.forEach(function(item) {
-        //                         var row = `<tr>
-        //                             <td>${item.kode_gudang}</td>
-        //                             <td>${item.nama_gudang}</td>
-        //                             <td>${item.kode_item}</td>
-        //                             <td>${item.quantity}</td>
-        //                             <td>${item.standard_stock}</td>
-        //                             <td>${item.death_stock}</td>
-        //                             <td>${item.status_validation}</td>
-        //                             <td>${item.message_validation}</td>
-        //                         </tr>`;
-        //                         $('#response-table tbody').append(row);
-        //                     });
-        //                 } else {
-        //                     $('#response-table-container').hide();
-        //                 }
-        //             },
-        //             error: function(xhr) {
-        //                 $('#loading').hide();
-        //                 console.error(xhr.responseJSON.message || "An error occurred.");
-        //             }
-        //         });
-        // });
-
+        
 
 
         $('#upload-form').on('submit', function(e) {
@@ -188,31 +147,82 @@
                     processData: false,
                     success: function(response) {
                         $('#loading').hide();
-                        $("#formUpload").modal('hide')
-                        Swal.fire('Success', response.message, 'success');
+                        $('#response-table tbody').empty();
 
+                        if ($.fn.DataTable.isDataTable('#response-table')) {
+                            $('#response-table').DataTable().destroy();
+                        }
+
+                        if (response.success && response.data.length > 0) {
+                            $('#response-table-container').show();
+                            response.data.forEach(function(item) {
+                                var row = `<tr>
+                                    <td>${item.kode_gudang}</td>
+                                    <td>${item.nama_gudang}</td>
+                                    <td>${item.kode_item}</td>
+                                    <td>${item.quantity}</td>
+                                    <td>${item.standard_stock}</td>
+                                    <td>${item.death_stock}</td>
+                                    <td>${item.status_validation}</td>
+                                    <td>${item.message_validation}</td>
+                                </tr>`;
+                                $('#response-table tbody').append(row);
+                            });
+
+                            $('#response-table').DataTable();
+                        } else {
+                            $('#response-table-container').hide();
+                        }
                     },
                     error: function(xhr) {
                         $('#loading').hide();
-                        if (xhr.status === 422) {
-                            // If Laravel returns a 422 error, handle the validation errors
-                            let errors = xhr.responseJSON.errors;
-                            let errorMessage = '';
-                            
-                            // Loop through the errors and append them to the errorMessage string
-                            $.each(errors, function(key, value) {
-                                errorMessage += value.join(', ') + '\n';
-                            });
-
-                            // Show the errors in a Swal alert
-                            Swal.fire('Validation Error', errorMessage, 'error');
-                        } else {
-                            // Handle other errors
-                            Swal.fire('Validation Error', xhr.responseJSON.message, 'error');
-                        }
+                        console.error(xhr.responseJSON.message || "An error occurred.");
                     }
                 });
         });
+
+
+
+        // $('#upload-form').on('submit', function(e) {
+        //         e.preventDefault();
+
+        //         let formData = new FormData(this);
+        //         $('#loading').show();
+        //         $('#response-table-container').hide();
+
+        //         $.ajax({
+        //             url: '/uploadgudang/validateUpload',
+        //             type: 'POST',
+        //             data: formData,
+        //             contentType: false,
+        //             processData: false,
+        //             success: function(response) {
+        //                 $('#loading').hide();
+        //                 $("#formUpload").modal('hide')
+        //                 Swal.fire('Success', response.message, 'success');
+
+        //             },
+        //             error: function(xhr) {
+        //                 $('#loading').hide();
+        //                 if (xhr.status === 422) {
+        //                     // If Laravel returns a 422 error, handle the validation errors
+        //                     let errors = xhr.responseJSON.errors;
+        //                     let errorMessage = '';
+                            
+        //                     // Loop through the errors and append them to the errorMessage string
+        //                     $.each(errors, function(key, value) {
+        //                         errorMessage += value.join(', ') + '\n';
+        //                     });
+
+        //                     // Show the errors in a Swal alert
+        //                     Swal.fire('Validation Error', errorMessage, 'error');
+        //                 } else {
+        //                     // Handle other errors
+        //                     Swal.fire('Validation Error', xhr.responseJSON.message, 'error');
+        //                 }
+        //             }
+        //         });
+        // });
 
         $('#uploadJsonExcel').on('click', function(e) {
                 e.preventDefault();

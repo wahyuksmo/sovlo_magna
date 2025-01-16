@@ -51,60 +51,62 @@
 <!-- MODAL UPLOAD -->
 <div class="modal fade" id="formUpload" tabindex="-1" aria-labelledby="formUploadLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl">
-      <div class="modal-content">
-        <div class="modal-header">
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-
-        <div class="modal-body">
-            <form id="upload-form" method="POST" enctype="multipart/form-data">
-                @csrf
-                <div class="mb-3">
-                    <label for="file" class="form-label">Upload Excel File</label>
-                    <input type="file" name="file" class="form-control" id="file">
-                </div>
-                <button type="submit" class="btn btn-success">Upload</button>
-            </form>
-
-             <div id="loading" class="text-center" style="display: none;">
-                <div class="spinner-border" role="status">
-                    <span class="visually-hidden">Loading...</span>
-                </div>
-                <p>Please wait...</p>
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
 
-            <div id="response-table-container" class="mt-4" style="display: none;">
-                <table class="table table-bordered" id="response-table">
-                    <thead>
-                        <tr>
-                            <th>Nomor Invoice</th>
-                            <th>Kode Customer</th>
-                            <th>Nama Customer</th>
-                            <th>Tanggal Invoice</th>
-                            <th>Kode Item</th>
-                            <th>Nama Item</th>
-                            <th>Warehouse</th>
-                            <th>QTY</th>
-                            <th>Price</th>
-                            <th>Total</th>
-                            <th>Status Validasi</th>
-                            <th>Pesan Validasi</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                    </tbody>
-                </table>
+            <div class="modal-body">
+                <form id="upload-form" method="POST" enctype="multipart/form-data">
+                    @csrf
+                    <div class="mb-3">
+                        <label for="file" class="form-label">Upload Excel File</label>
+                        <input type="file" name="file" class="form-control" id="file">
+                    </div>
+                    <button type="submit" class="btn btn-success">Upload</button>
+                </form>
+
+                <div id="loading" class="text-center" style="display: none;">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p>Please wait...</p>
+                </div>
+
+                <div id="response-table-container" class="mt-4" style="display: none;">
+                    <div class="table-responsive"> <!-- Tambahkan wrapper table-responsive -->
+                        <table class="table table-bordered" id="response-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 30px;">Nomor Invoice</th>
+                                    <th>Kode Customer</th>
+                                    <th>Nama Customer</th>
+                                    <th>Tanggal Invoice</th>
+                                    <th>Kode Item</th>
+                                    <th>Nama Item</th>
+                                    <th>Warehouse</th>
+                                    <th>QTY</th>
+                                    <th>Price</th>
+                                    <th>Total</th>
+                                    <th>Status Validasi</th>
+                                    <th>Pesan Validasi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
             </div>
 
+            <div class="modal-footer">
+                <button id="uploadJsonExcel" class="btn btn-primary">Submit</button>
+            </div>
         </div>
-        
-        {{-- <div class="modal-footer">
-            <button id="uploadJsonExcel" class="btn btn-primary">Submit</button>
-        </div> --}}
-
-      </div>
     </div>
-  </div>
+</div>
+
 
 @endsection
 
@@ -139,54 +141,6 @@
         });
 
 
-        // $('#upload-form').on('submit', function(e) {
-        //         e.preventDefault();
-
-        //         let formData = new FormData(this);
-        //         $('#loading').show();
-        //         $('#response-table-container').hide();
-
-        //         $.ajax({
-        //             url: '/uploadpenjualan/validateUpload',
-        //             type: 'POST',
-        //             data: formData,
-        //             contentType: false,
-        //             processData: false,
-        //             success: function(response) {
-        //                 $('#loading').hide();
-        //                 $('#response-table tbody').empty();
-
-        //                 if (response.success && response.data.length > 0) {
-        //                     $('#response-table-container').show();
-        //                     response.data.forEach(function(item) {
-        //                         var row = `<tr>
-        //                             <td>${item.no_invoice}</td>
-        //                             <td>${item.kode_customer}</td>
-        //                             <td>${item.nama_customer}</td>
-        //                             <td>${item.tgl_invoice}</td>
-        //                             <td>${item.kode_item}</td>
-        //                             <td>${item.nama_item}</td>
-        //                             <td>${item.warehouse}</td>
-        //                             <td>${item.qty}</td>
-        //                             <td>${item.price}</td>
-        //                             <td>${item.total}</td>
-        //                             <td>${item.status_validation}</td>
-        //                             <td>${item.message_validation}</td>
-        //                         </tr>`;
-        //                         $('#response-table tbody').append(row);
-        //                     });
-        //                 } else {
-        //                     $('#response-table-container').hide();
-        //                 }
-        //             },
-        //             error: function(xhr) {
-        //                 $('#loading').hide();
-        //                 console.error(xhr.responseJSON.message || "An error occurred.");
-        //             }
-        //         });
-        // });
-
-
         $('#upload-form').on('submit', function(e) {
                 e.preventDefault();
 
@@ -202,27 +156,81 @@
                     processData: false,
                     success: function(response) {
                         $('#loading').hide();
-                        $("#formUpload").modal('hide')
-                        Swal.fire('Success', response.message, 'success');
+                        $('#response-table tbody').empty();
 
+                        if ($.fn.DataTable.isDataTable('#response-table')) {
+                            $('#response-table').DataTable().destroy();
+                        }
+
+                        if (response.success && response.data.length > 0) {
+                            $('#response-table-container').show();
+                            response.data.forEach(function(item) {
+                                var row = `<tr>
+                                    <td>${item.no_invoice}</td>
+                                    <td>${item.kode_customer}</td>
+                                    <td>${item.nama_customer}</td>
+                                    <td>${item.tgl_invoice}</td>
+                                    <td>${item.kode_item}</td>
+                                    <td>${item.nama_item}</td>
+                                    <td>${item.warehouse}</td>
+                                    <td>${item.qty}</td>
+                                    <td>${item.price}</td>
+                                    <td>${item.total}</td>
+                                    <td>${item.status_validation}</td>
+                                    <td>${item.message_validation}</td>
+                                </tr>`;
+                                $('#response-table tbody').append(row);
+                            });
+
+                            $('#response-table').DataTable();
+                        } else {
+                            $('#response-table-container').hide();
+                        }
                     },
                     error: function(xhr) {
                         $('#loading').hide();
-                        if (xhr.status === 422) {
-                            let errors = xhr.responseJSON.errors;
-                            let errorMessage = '';
-                            
-                            $.each(errors, function(key, value) {
-                                errorMessage += value.join(', ') + '\n';
-                            });
-
-                            Swal.fire('Validation Error', errorMessage, 'error');
-                        } else {
-                            Swal.fire('Error', xhr.responseJSON.message, 'error');
-                        }
+                        console.error(xhr.responseJSON.message || "An error occurred.");
                     }
                 });
         });
+
+
+        // $('#upload-form').on('submit', function(e) {
+        //         e.preventDefault();
+
+        //         let formData = new FormData(this);
+        //         $('#loading').show();
+        //         $('#response-table-container').hide();
+
+        //         $.ajax({
+        //             url: '/uploadpenjualan/validateUpload',
+        //             type: 'POST',
+        //             data: formData,
+        //             contentType: false,
+        //             processData: false,
+        //             success: function(response) {
+        //                 $('#loading').hide();
+        //                 $("#formUpload").modal('hide')
+        //                 Swal.fire('Success', response.message, 'success');
+
+        //             },
+        //             error: function(xhr) {
+        //                 $('#loading').hide();
+        //                 if (xhr.status === 422) {
+        //                     let errors = xhr.responseJSON.errors;
+        //                     let errorMessage = '';
+                            
+        //                     $.each(errors, function(key, value) {
+        //                         errorMessage += value.join(', ') + '\n';
+        //                     });
+
+        //                     Swal.fire('Validation Error', errorMessage, 'error');
+        //                 } else {
+        //                     Swal.fire('Error', xhr.responseJSON.message, 'error');
+        //                 }
+        //             }
+        //         });
+        // });
 
         $('#uploadJsonExcel').on('click', function(e) {
                 e.preventDefault();

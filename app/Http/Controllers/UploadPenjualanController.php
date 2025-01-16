@@ -47,7 +47,7 @@ class UploadPenjualanController extends Controller
     
 
 
-    public function validationUploadOld(Request $request) {
+    public function validationUpload(Request $request) {
 
         $request->validate([
             'file' => 'mimes:xlsx,xls,csv',
@@ -56,10 +56,7 @@ class UploadPenjualanController extends Controller
 
         $uploadedFile = $request->file('file');
         $spreadsheet = IOFactory::load($uploadedFile);
-
-
-
-        // DB::table('penjualan_temp')->truncate();
+        $worksheet = $spreadsheet->getActiveSheet();
 
         $data = [];
 
@@ -91,232 +88,154 @@ class UploadPenjualanController extends Controller
             'Total'             => 'total' 
         ];
 
-        $sheet = $spreadsheet->getActiveSheet();
 
 
-        $dataToInsert = [];
+        $rows = $worksheet->toArray();
 
-        $lastId = DB::table('penjualan')->max('id') ?? 0;
 
-        foreach ($sheet->getRowIterator() as $rowIndex => $row) {
-            // Lewati header jika ada (misalnya baris pertama)
-            if ($rowIndex === 1) {
+        if (!empty($rows)) {
+            $headerRow = array_shift($rows);
+    
+            foreach ($headerRow as $header) {
+                if (array_key_exists($header, $headerMapping)) {
+                    $key = $headerMapping[$header]; 
+                    $keys[] = $key;
+                }
+            }
+        }
+
+
+
+        foreach ($rows as $index => $row) {
+            $rowData = array_combine($keys, $row);
+
+            if (empty(array_filter($row))) {
                 continue;
             }
 
-            // Ambil data dari kolom tertentu (A, B, C, ...)
-            $column1 = $sheet->getCell('A' . $rowIndex)->getValue(); // Kolom A
-            $column2 = $sheet->getCell('B' . $rowIndex)->getValue(); // Kolom B
-            $column3 = $sheet->getCell('C' . $rowIndex)->getValue(); // Kolom C
-            $column4 = $sheet->getCell('D' . $rowIndex)->getValue(); // Kolom C
-            $column5 = $sheet->getCell('E' . $rowIndex)->getValue(); // Kolom C
-            $column6 = $sheet->getCell('F' . $rowIndex)->getValue(); // Kolom C
-            $column7 = $sheet->getCell('G' . $rowIndex)->getValue(); // Kolom C
-            $column8 = $sheet->getCell('H' . $rowIndex)->getValue(); // Kolom C
-            $column9 = $sheet->getCell('I' . $rowIndex)->getValue(); // Kolom C
-            $column10 = $sheet->getCell('J' . $rowIndex)->getValue(); // Kolom C
-            $column11 = $sheet->getCell('K' . $rowIndex)->getValue(); // Kolom C
+            // $price = str_replace(',', '.', $row[8]); // Ganti koma dengan titik
+            // $total = str_replace(',', '.', $row[9]); // Ganti koma dengan titik
+           
+            $isValid = true;
+            $validationMessage = '';
+    
+            foreach ($rules as $column => $rule) {
+                $cellValue = $rowData[$column] ?? null;
 
-            if(empty($column1) || empty($column2) || empty($column3) || empty($column4) || empty($column5) || empty($column6) || empty($column7) || empty($column8) || empty($column9) || empty($column10)) {
-                continue;
+                if ($column === 'warehouse_code') {
+                    $isWarehouseExists = DB::table('stock_gudang')
+                        ->where('kode_gudang', $cellValue)
+                        ->exists();
+    
+                    if (!$isWarehouseExists) {
+                        $isValid = false;
+                        $validationMessage = "Kode Gudang ($cellValue) tidak ditemukan di tabel Stock Gudang.";
+                        break;
+                    }
+                }
+
+                $validator = Validator::make([$column => $cellValue], [$column => $rule]);
+    
+                if ($validator->fails()) {
+                    $isValid = false;
+                    $validationMessage = $validator->errors()->first();
+                }
             }
-
-            $tanggal = \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject($column4);
-            if (!$tanggal instanceof \DateTime) {
-                continue;  // Jika bukan tanggal yang valid, lewati baris ini
-            }
-
-            $lastId++;
-
-            // Menambahkan data ke dalam array
-            $dataToInsert[] = [
-                'id' => $lastId,
-                'no_invoice' => $column1,
-                'kode_customer' => $column2,
-                'nama_customer' => $column3,
-                'tgl_invoice' => $tanggal, // Pastikan menambahkan timestamp
-                'kode_item' => $column5, // Jika Anda menggunakan timestamp Eloquent
-                'nama_item' => $column6, // Jika Anda menggunakan timestamp Eloquent
-                'warehouse' => $column7, // Jika Anda menggunakan timestamp Eloquent
-                'qty' => $column8, // Jika Anda menggunakan timestamp Eloquent
-                'price' =>  number_format((float)str_replace(',', '.',  $column9), 2, '.', ''), // Jika Anda menggunakan timestamp Eloquent
-                'total' =>  number_format((float)str_replace(',', '.',  $column10), 2, '.', ''), // Jika Anda menggunakan timestamp Eloquent
-            ];
-
-            // if (count($dataToInsert) >= 50) {
-            //     DB::table('penjualan_temp')->insert($dataToInsert);
-            //     $dataToInsert = []; // Reset array data setelah insert
-            // }
+            $rowData['status_validation'] = $isValid ? 'Success' : 'Error';
+            $rowData['message_validation'] = $isValid ? 'Row Data Is Valid' : $validationMessage;
+    
+    
+            $rowData["price"] = number_format((float)str_replace(',', '.', $rowData["price"]), 2, '.', '');
+            $rowData["total"] = number_format((float)str_replace(',', '.', $rowData["total"]), 2, '.', '');
+            $data[] = $rowData;
         }
 
-        // if (!empty($dataToInsert)) {
-        //     DB::table('penjualan_temp')->insert($dataToInsert);
-        // }
-
-        if (!empty($dataToInsert)) {
-            DB::table('penjualan')->insert($dataToInsert);
-        }
-
-        // $rows = $worksheet->toArray();
-
-        // dd($rows);
-
-        // if (!empty($rows)) {
-        //     $headerRow = array_shift($rows);
-    
-        //     foreach ($headerRow as $header) {
-        //         if (array_key_exists($header, $headerMapping)) {
-        //             $key = $headerMapping[$header]; 
-        //             $keys[] = $key;
-        //         }
-        //     }
-        // }
-
-
-
-
 
     
-        // foreach ($rows as $index => $row) {
-        //     $rowData = array_combine($keys, $row);
-            
-
-        //     // if($index == 0) continue; 
-
-
-        //     // dd(number_format((float)$row[9], 2, ',', '.'));
-        //     // $price = str_replace(',', '.', $row[8]); // Ganti koma dengan titik
-        //     // $total = str_replace(',', '.', $row[9]); // Ganti koma dengan titik
-        //     // $header[] =  array (
-
-        //     //     'no_invoice' => $row[0],
-        //     //     'kode_customer' => $row[1],
-        //     //     'nama_customer' => $row[2],
-        //     //     'tgl_invoice' => $row[3],
-        //     //     'kode_item' => $row[4],
-        //     //     'nama_item' => $row[5],
-        //     //     'warehouse' => $row[6],
-        //     //     'qty' => $row[7],
-        //     //     'price' =>  number_format((float)str_replace(',', '.', $row[8]), 2, '.', ''), // Format numeric 18,2
-        //     //     'total' => number_format((float)str_replace(',', '.', $row[9]), 2, '.', ''), 
-
-        //     // );
-                
-
-
-
-        //     // dd($header);
-    
-        //     // dd($rowData);
-        //     // $isValid = true;
-        //     // $validationMessage = '';
-    
-        //     // foreach ($rules as $column => $rule) {
-        //     //     $cellValue = $rowData[$column] ?? null;
-        //     //     $validator = Validator::make([$column => $cellValue], [$column => $rule]);
-    
-        //     //     if ($validator->fails()) {
-        //     //         $isValid = false;
-        //     //         $validationMessage = $validator->errors()->first();
-        //     //     }
-        //     // }
-        //     // $rowData['status_validation'] = $isValid ? 'Success' : 'Error';
-        //     // $rowData['message_validation'] = $isValid ? 'Row Data Is Valid' : $validationMessage;
-    
-    
-        //     $rowData["price"] = number_format((float)str_replace(',', '.', $rowData["price"]), 2, '.', '');
-        //     $rowData["total"] = number_format((float)str_replace(',', '.', $rowData["total"]), 2, '.', '');
-        //     $data[] = $rowData;
-        // }
-        // DB::table('penjualan_temp')->insert($data);
-
-
-
-        
         return response()->json([
             'success' => true,
-            'data' => count($dataToInsert),
-            'message' => 'File processed successfully. ' . count($dataToInsert) . ' rows inserted.'
+            'data' => $data,
+            'message' => 'File processed successfully..'
         ]);
         
 
     }
 
 
-    public function validationUpload(Request $request)
-    {
-        $request->validate([
-            'file' => 'required|mimes:xlsx,xls,csv',
-        ]);
+    // public function validationUpload(Request $request)
+    // {
+    //     $request->validate([
+    //         'file' => 'required|mimes:xlsx,xls,csv',
+    //     ]);
 
-        $file = $request->file('file');
+    //     $file = $request->file('file');
 
-        $spreadsheet = IOFactory::load($file->getRealPath());
-        $sheetData = $spreadsheet->getActiveSheet()->toArray(null, true, true, true);
+    //     $spreadsheet = IOFactory::load($file->getRealPath());
+    //     $sheetData = $spreadsheet->getActiveSheet()->toArray(null, true, true, true);
 
-        $mapping = [
-            'A' => 'no_invoice',
-            'B' => 'kode_customer',
-            'C' => 'nama_customer',
-            'D' => 'tgl_invoice',
-            'E' => 'kode_item',
-            'F' => 'nama_item',
-            'G' => 'warehouse',
-            'I' => 'qty',
-            'J' => 'price',
-            'K' => 'total'
-        ];
+    //     $mapping = [
+    //         'A' => 'no_invoice',
+    //         'B' => 'kode_customer',
+    //         'C' => 'nama_customer',
+    //         'D' => 'tgl_invoice',
+    //         'E' => 'kode_item',
+    //         'F' => 'nama_item',
+    //         'G' => 'warehouse',
+    //         'I' => 'qty',
+    //         'J' => 'price',
+    //         'K' => 'total'
+    //     ];
 
-        $data = array_map(function ($row) use ($mapping) {
-            $row['J'] = number_format((float)str_replace(',', '.', $row['I']), 2, '.', '');
-            $row['K'] = number_format((float)str_replace(',', '.', $row['J']), 2, '.', '');
-            return array_combine(
-                array_values($mapping),
-                array_intersect_key($row, array_flip(array_keys($mapping)))
-            );
-        }, array_slice($sheetData, 1));
+    //     $data = array_map(function ($row) use ($mapping) {
+    //         $row['J'] = number_format((float)str_replace(',', '.', $row['I']), 2, '.', '');
+    //         $row['K'] = number_format((float)str_replace(',', '.', $row['J']), 2, '.', '');
+    //         return array_combine(
+    //             array_values($mapping),
+    //             array_intersect_key($row, array_flip(array_keys($mapping)))
+    //         );
+    //     }, array_slice($sheetData, 1));
 
-        // Ambil semua nilai unik dari kolom warehouse
-        $warehouseList = array_unique(array_column($data, 'warehouse'));
+    //     // Ambil semua nilai unik dari kolom warehouse
+    //     $warehouseList = array_unique(array_column($data, 'warehouse'));
 
-        // Ambil daftar kode_gudang yang valid dari tabel stock_gudang
-        $validWarehouses = DB::table('stock_gudang')
-            ->whereIn('kode_gudang', $warehouseList)  // Sesuaikan dengan kolom kode_gudang
-            ->pluck('kode_gudang')
-            ->toArray();
+    //     // Ambil daftar kode_gudang yang valid dari tabel stock_gudang
+    //     $validWarehouses = DB::table('stock_gudang')
+    //         ->whereIn('kode_gudang', $warehouseList)  // Sesuaikan dengan kolom kode_gudang
+    //         ->pluck('kode_gudang')
+    //         ->toArray();
 
-        // Filter data yang memiliki warehouse valid
-        $validData = array_filter($data, function ($row) use ($validWarehouses) {
-            return in_array($row['warehouse'], $validWarehouses);
-        });
+    //     // Filter data yang memiliki warehouse valid
+    //     $validData = array_filter($data, function ($row) use ($validWarehouses) {
+    //         return in_array($row['warehouse'], $validWarehouses);
+    //     });
 
-        $batchSize = 1000; // Set batch size
-        $chunks = array_chunk($validData, $batchSize); // Split data into chunks of 1000
+    //     $batchSize = 1000; // Set batch size
+    //     $chunks = array_chunk($validData, $batchSize); // Split data into chunks of 1000
 
-        DB::beginTransaction();
+    //     DB::beginTransaction();
 
-        try {
-            foreach ($chunks as $chunk) {
-                // Insert data valid saja
-                DB::table('penjualan')->insert($chunk);
-            }
+    //     try {
+    //         foreach ($chunks as $chunk) {
+    //             // Insert data valid saja
+    //             DB::table('penjualan')->insert($chunk);
+    //         }
 
-            DB::commit();
+    //         DB::commit();
 
-            return response()->json([
-                'success' => true,
-                'data' => count($validData),
-                'message' => 'File processed successfully. ' . count($validData) . ' rows inserted.'
-            ]);
-        } catch (\Exception $e) {
-            DB::rollBack();
+    //         return response()->json([
+    //             'success' => true,
+    //             'data' => count($validData),
+    //             'message' => 'File processed successfully. ' . count($validData) . ' rows inserted.'
+    //         ]);
+    //     } catch (\Exception $e) {
+    //         DB::rollBack();
 
-            return response()->json([
-                'success' => false,
-                'message' => 'An error occurred: ' . $e->getMessage()
-            ], 500);
-        }
-    }
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'An error occurred: ' . $e->getMessage()
+    //         ], 500);
+    //     }
+    // }
 
 
 

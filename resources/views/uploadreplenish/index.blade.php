@@ -66,18 +66,21 @@
             </div>
 
             <div id="response-table-container" class="mt-4" style="display: none;">
-                <table class="table table-bordered" id="response-table">
-                    <thead>
-                        <tr>
-                            <th>Kode Item</th>
-                            <th>Quantity</th>
-                            <th>Status Validasi</th>
-                            <th>Pesan Validasi</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                    </tbody>
-                </table>
+                <div class="table-responsive">
+                    <table class="table table-bordered" id="response-table">
+                        <thead>
+                            <tr>
+                                <th>Kode Item</th>
+                                <th>Quantity</th>
+                                <th>Status Validasi</th>
+                                <th>Pesan Validasi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                </div>
+                
             </div>
 
         </div>
@@ -116,45 +119,6 @@
         });
 
 
-        // $('#upload-form').on('submit', function(e) {
-        //         e.preventDefault();
-
-        //         let formData = new FormData(this);
-        //         $('#loading').show();
-        //         $('#response-table-container').hide();
-
-        //         $.ajax({
-        //             url: '/uploadreplenish/validateUpload',
-        //             type: 'POST',
-        //             data: formData,
-        //             contentType: false,
-        //             processData: false,
-        //             success: function(response) {
-        //                 $('#loading').hide();
-        //                 $('#response-table tbody').empty();
-
-        //                 if (response.success && response.data.length > 0) {
-        //                     $('#response-table-container').show();
-        //                     response.data.forEach(function(item) {
-        //                         var row = `<tr>
-        //                             <td>${item.kode_item}</td>
-        //                             <td>${item.quantity}</td>
-        //                             <td>${item.status_validation}</td>
-        //                             <td>${item.message_validation}</td>
-        //                         </tr>`;
-        //                         $('#response-table tbody').append(row);
-        //                     });
-        //                 } else {
-        //                     $('#response-table-container').hide();
-        //                 }
-        //             },
-        //             error: function(xhr) {
-        //                 $('#loading').hide();
-        //                 console.error(xhr.responseJSON.message || "An error occurred.");
-        //             }
-        //         });
-        // });
-
         $('#upload-form').on('submit', function(e) {
                 e.preventDefault();
 
@@ -170,26 +134,72 @@
                     processData: false,
                     success: function(response) {
                         $('#loading').hide();
-                        $("#formUpload").modal('hide')
-                        Swal.fire('Success', response.message, 'success');
+                        $('#response-table tbody').empty();
+
+                        if ($.fn.DataTable.isDataTable('#response-table')) {
+                            $('#response-table').DataTable().destroy();
+                        }
+
+                        if (response.success && response.data.length > 0) {
+                            $('#response-table-container').show();
+                            response.data.forEach(function(item) {
+                                var row = `<tr>
+                                    <td>${item.kode_item}</td>
+                                    <td>${item.quantity}</td>
+                                    <td>${item.status_validation}</td>
+                                    <td>${item.message_validation}</td>
+                                </tr>`;
+                                $('#response-table tbody').append(row);
+                            });
+
+                            $('#response-table').DataTable();
+
+                        } else {
+                            $('#response-table-container').hide();
+                        }
                     },
                     error: function(xhr) {
                         $('#loading').hide();
-                        if (xhr.status === 422) {
-                            let errors = xhr.responseJSON.errors;
-                            let errorMessage = '';
-                            
-                            $.each(errors, function(key, value) {
-                                errorMessage += value.join(', ') + '\n';
-                            });
-
-                            Swal.fire('Validation Error', errorMessage, 'error');
-                        } else {
-                            Swal.fire('Error', xhr.responseJSON.message, 'error');
-                        }
+                        console.error(xhr.responseJSON.message || "An error occurred.");
                     }
                 });
         });
+
+        // $('#upload-form').on('submit', function(e) {
+        //         e.preventDefault();
+
+        //         let formData = new FormData(this);
+        //         $('#loading').show();
+        //         $('#response-table-container').hide();
+
+        //         $.ajax({
+        //             url: '/uploadreplenish/validateUpload',
+        //             type: 'POST',
+        //             data: formData,
+        //             contentType: false,
+        //             processData: false,
+        //             success: function(response) {
+        //                 $('#loading').hide();
+        //                 $("#formUpload").modal('hide')
+        //                 Swal.fire('Success', response.message, 'success');
+        //             },
+        //             error: function(xhr) {
+        //                 $('#loading').hide();
+        //                 if (xhr.status === 422) {
+        //                     let errors = xhr.responseJSON.errors;
+        //                     let errorMessage = '';
+                            
+        //                     $.each(errors, function(key, value) {
+        //                         errorMessage += value.join(', ') + '\n';
+        //                     });
+
+        //                     Swal.fire('Validation Error', errorMessage, 'error');
+        //                 } else {
+        //                     Swal.fire('Error', xhr.responseJSON.message, 'error');
+        //                 }
+        //             }
+        //         });
+        // });
 
 
         $('#uploadJsonExcel').on('click', function(e) {
