@@ -23,11 +23,20 @@ class UploadReplenishRepository
         try {
             foreach ($request as $data) {
                 if ($data['status_validation'] === 'Success') {
-                    // Menggunakan updateOrCreate berdasarkan kode_item
-                    $penish = StockReplenish::updateOrCreate(
-                        ['kode_item' => $data['kode_item']], // Kondisi pencocokan
-                        ['quantity' => $data['quantity']]   // Data yang akan diupdate atau dibuat
-                    );
+                    // Cek apakah data sudah ada berdasarkan kode_item
+                    $penish = StockReplenish::where('kode_item', $data['kode_item'])->first();
+    
+                    if ($penish) {
+                        // Jika data ditemukan, update quantity
+                        $penish->quantity = $data['quantity'];
+                        $penish->save();
+                    } else {
+                        // Jika data tidak ditemukan, buat data baru
+                        $penish = new StockReplenish();
+                        $penish->kode_item = $data['kode_item'];
+                        $penish->quantity = $data['quantity'];
+                        $penish->save();
+                    }
     
                     $savedPenishs[] = $penish;
                 }
