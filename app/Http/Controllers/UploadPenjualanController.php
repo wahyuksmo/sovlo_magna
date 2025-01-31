@@ -107,6 +107,9 @@ class UploadPenjualanController extends Controller
 
 
         foreach ($rows as $index => $row) {
+
+            $row = array_pad(array_slice($row, 0, 11), 11, null);
+
             $rowData = array_combine($keys, $row);
 
             if (empty(array_filter($row))) {
