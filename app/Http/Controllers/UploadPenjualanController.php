@@ -125,17 +125,17 @@ class UploadPenjualanController extends Controller
             foreach ($rules as $column => $rule) {
                 $cellValue = $rowData[$column] ?? null;
 
-                if ($column === 'warehouse_code') {
-                    $isWarehouseExists = DB::table('stock_gudang')
-                        ->where('kode_gudang', $cellValue)
-                        ->exists();
+                // if ($column === 'warehouse_code') {
+                //     $isWarehouseExists = DB::table('stock_gudang')
+                //         ->where('kode_gudang', $cellValue)
+                //         ->exists();
     
-                    if (!$isWarehouseExists) {
-                        $isValid = false;
-                        $validationMessage = "Kode Gudang ($cellValue) tidak ditemukan di tabel Stock Gudang.";
-                        break;
-                    }
-                }
+                //     if (!$isWarehouseExists) {
+                //         $isValid = false;
+                //         $validationMessage = "Kode Gudang ($cellValue) tidak ditemukan di tabel Stock Gudang.";
+                //         break;
+                //     }
+                // }
 
                 $validator = Validator::make([$column => $cellValue], [$column => $rule]);
     
