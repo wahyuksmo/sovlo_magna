@@ -84,6 +84,7 @@
                                     <th>Tanggal Invoice</th>
                                     <th>Kode Item</th>
                                     <th>Nama Item</th>
+                                    <th>Kode Warehouse</th>
                                     <th>Warehouse</th>
                                     <th>QTY</th>
                                     <th>Price</th>
@@ -172,6 +173,7 @@
                                     <td>${item.tgl_invoice}</td>
                                     <td>${item.kode_item}</td>
                                     <td>${item.nama_item}</td>
+                                    <td>${item.warehouse_code}</td>
                                     <td>${item.warehouse}</td>
                                     <td>${item.qty}</td>
                                     <td>${item.price}</td>
@@ -245,12 +247,13 @@
                         tgl_invoice: $(this).find('td').eq(3).text(),
                         kode_item: $(this).find('td').eq(4).text(),
                         nama_item: $(this).find('td').eq(5).text(),
-                        warehouse: $(this).find('td').eq(6).text(),
-                        qty: $(this).find('td').eq(7).text(),
-                        price: $(this).find('td').eq(8).text(),
-                        total: $(this).find('td').eq(9).text(),
-                        status_validation: $(this).find('td').eq(10).text(),
-                        message_validation: $(this).find('td').eq(11).text()
+                        warehouse_code : $(this).find('td').eq(6).text(),
+                        warehouse: $(this).find('td').eq(7).text(),
+                        qty: $(this).find('td').eq(8).text(),
+                        price: $(this).find('td').eq(9).text(),
+                        total: $(this).find('td').eq(10).text(),
+                        status_validation: $(this).find('td').eq(11).text(),
+                        message_validation: $(this).find('td').eq(12).text()
                     };
                     dataToSubmit.push(row);
                 });

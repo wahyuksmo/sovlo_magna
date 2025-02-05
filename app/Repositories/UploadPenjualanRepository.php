@@ -24,12 +24,17 @@ class UploadPenjualanRepository
         try {
             foreach ($request as $data) {
                 if ($data['status_validation'] === 'Success') {
+
                     // Cari data berdasarkan kombinasi unik
                     $existingPenjualan = Penjualan::where('no_invoice', $data['no_invoice'])
                         ->where('kode_customer', $data['kode_customer'])
                         ->where('kode_item', $data['kode_item'])
                         ->where('warehouse', $data['warehouse_code'])
                         ->first();
+
+                    if (!DB::table('stock_gudang')->where('kode_gudang', $data['warehouse_code'])->exists()) {
+                        continue;
+                    }
     
                     if ($existingPenjualan) {
                         // Jika data ditemukan, perbarui data yang ada
