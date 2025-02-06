@@ -17,33 +17,61 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 class UploadPenjualanController extends Controller
 {
     //
+    // public function index(Request $request) {
+    //     if ($request->ajax()) {
+    //         $search = $request->input('search.value'); // Nilai pencarian dari DataTables
+    //         $baseQuery = "SELECT * FROM penjualan";
+    //         $bindings = [];
+    
+    //         if (!empty($search)) {
+    //             $baseQuery .= " WHERE no_invoice ILIKE :search
+    //                             OR kode_customer ILIKE :search
+    //                             OR nama_customer ILIKE :search
+    //                             OR tgl_invoice::TEXT ILIKE :search
+    //                             OR kode_item ILIKE :search
+    //                             OR nama_item ILIKE :search
+    //                             OR warehouse ILIKE :search";
+    //             $bindings['search'] = '%' . $search . '%';
+    //         }
+    
+    //         $baseQuery .= " LIMIT 5000 ORDER BY tgl_invoice DESC";
+
+    
+    //         $data = DB::select($baseQuery, $bindings);
+    
+    //         return DataTables::of($data)->make(true);
+    //     }
+    
+    //     return view('uploadpenjualan.index');
+    // }
+    
+
     public function index(Request $request) {
         if ($request->ajax()) {
-            $search = $request->input('search.value'); // Nilai pencarian dari DataTables
-            $baseQuery = "SELECT * FROM penjualan";
-            $bindings = [];
+            $search = $request->input('search.value'); // DataTables search input
+            $query = DB::table('penjualan');
     
+            // Apply search filter
             if (!empty($search)) {
-                $baseQuery .= " WHERE no_invoice ILIKE :search
-                                OR kode_customer ILIKE :search
-                                OR nama_customer ILIKE :search
-                                OR tgl_invoice::TEXT ILIKE :search
-                                OR kode_item ILIKE :search
-                                OR nama_item ILIKE :search
-                                OR warehouse ILIKE :search";
-                $bindings['search'] = '%' . $search . '%';
+                $query->where(function ($q) use ($search) {
+                    $q->where('no_invoice', 'ILIKE', "%{$search}%")
+                      ->orWhere('kode_customer', 'ILIKE', "%{$search}%")
+                      ->orWhere('nama_customer', 'ILIKE', "%{$search}%")
+                      ->orWhereRaw("tgl_invoice::TEXT ILIKE ?", ["%{$search}%"])
+                      ->orWhere('kode_item', 'ILIKE', "%{$search}%")
+                      ->orWhere('nama_item', 'ILIKE', "%{$search}%")
+                      ->orWhere('warehouse', 'ILIKE', "%{$search}%");
+                });
             }
     
-            $baseQuery .= " LIMIT 5000";
-    
-            $data = DB::select($baseQuery, $bindings);
+            // Order by date and limit results
+            $data = $query->orderByDesc('tgl_invoice')->limit(5000)->get();
     
             return DataTables::of($data)->make(true);
         }
     
         return view('uploadpenjualan.index');
     }
-    
     
 
 
